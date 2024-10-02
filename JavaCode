@@ -1,0 +1,81 @@
+public Map<String,String> getDataFromGoogleSheetAsMap(String sheetName, String uniqueData)
+	{
+		String sheetId="1aOFxbHnxXF1WwPJEma3KOMi6OdlFBCw7H2msqo4Eei4";
+		String apiKey="AIzaSyB0t8zxy4MGS_0MgI0X9AQZLAQtbAxBxp4";
+		String range="A1:Z100";
+		Boolean loop=true;
+		int uniqueDataIndex=0;
+		Map<String,String> mapData=new HashMap<String, String>();
+
+		String sheetRange=sheetName+"!"+range;
+		String sheetURL="https://sheets.googleapis.com/v4/spreadsheets/"+sheetId+"/values/"+sheetRange;
+		RestAssured.baseURI=sheetURL;
+		RequestSpecification request = RestAssured.given();
+		Response response = request.header("X-goog-api-key", apiKey).get();
+		String str = response.getBody().asString();
+		JSONObject jsonObj = new JSONObject(str);
+
+		JSONArray data = (JSONArray) jsonObj.get("values");
+
+		for (int i = 0; i < data.length(); i++) 
+		{
+			JSONArray array = (JSONArray) data.get(i);
+			if(array.length()==0)
+			{
+				data.remove(i);
+			}
+		}
+		int num=0;
+		for (int i = 0; i < data.length(); i++) 
+		{
+			if(loop==true)
+			{
+				JSONArray array = (JSONArray) data.get(i);
+				for (int j = 0; j < array.length(); j++) 
+				{
+					if (array.get(j).equals(uniqueData)) 
+					{
+						uniqueDataIndex=i;
+						loop=false;
+						num=0;
+						break;
+					}
+				}
+				num++;
+			}
+			else
+			{
+				break;
+			}
+
+		}
+		
+		if(num==data.length())
+		{
+			return mapData;
+		}
+		else {
+
+			JSONArray val=(JSONArray) data.get(uniqueDataIndex);
+			JSONArray key=(JSONArray) data.get(uniqueDataIndex-1);
+			
+			if(key.length()!=val.length())
+			{
+				int missData = key.length()-val.length();
+				int lastIndex = key.length()-1;
+				
+				for (int i = missData; i > 0; i--) 
+				{
+					val.put(lastIndex, "");
+					lastIndex--;
+				}
+			}
+
+			for (int i = 0; i < key.length(); i++) 
+			{
+				mapData.put((String)key.get(i), (String)val.get(i));
+			}
+		}
+
+		return mapData;
+	}
